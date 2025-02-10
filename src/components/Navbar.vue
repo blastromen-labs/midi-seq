@@ -1,9 +1,17 @@
 <template>
     <nav class="w-full bg-gray-900 border-b border-gray-800">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex items-center justify-between">
-                <h1 class="text-white text-xl font-bold">MIDI Sequencer</h1>
+            <div class="flex items-center justify-end">
                 <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2">
+                        <label class="text-white text-sm">Show Notes</label>
+                        <button @click="toggleShowNotes" :class="[
+                            'w-12 h-6 rounded-full transition-colors relative px-0.5 flex items-center',
+                            showNotes ? 'bg-blue-600 justify-end' : 'bg-gray-600 justify-start'
+                        ]">
+                            <span class="block w-5 h-5 rounded-full bg-white transition-all"></span>
+                        </button>
+                    </div>
                     <div v-if="midiSupported" class="flex items-center gap-2">
                         <label class="text-white text-sm">MIDI Output:</label>
                         <select v-model="selectedDevice" @change="selectMidiOutput"
@@ -29,8 +37,14 @@ import { ref, onMounted } from 'vue';
 const midiSupported = ref(false);
 const midiOutputs = ref([]);
 const selectedDevice = ref('');
+const showNotes = ref(false);
 
-const emit = defineEmits(['midiOutputSelected']);
+const emit = defineEmits(['midiOutputSelected', 'showNotesChanged']);
+
+const toggleShowNotes = () => {
+    showNotes.value = !showNotes.value;
+    emit('showNotesChanged', showNotes.value);
+};
 
 const initializeMidi = async () => {
     try {

@@ -68,6 +68,10 @@ const getColorClass = (cell) => {
         case 'blue': return 'bg-blue-600';
         case 'red': return 'bg-red-600';
         case 'green': return 'bg-green-600';
+        case 'cyan': return 'bg-cyan-500';
+        case 'magenta': return 'bg-fuchsia-500';
+        case 'yellow': return 'bg-yellow-500';
+        case 'white': return 'bg-white';
         default: return '';
     }
 };

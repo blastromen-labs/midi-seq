@@ -1,19 +1,10 @@
 <template>
   <div class="min-h-screen flex flex-col bg-black" tabindex="0" @keydown="handleKeyDown" ref="container">
-    <Navbar @midi-output-selected="handleMidiOutputSelected" />
+    <Navbar @midi-output-selected="handleMidiOutputSelected" @show-notes-changed="handleShowNotesChanged" />
     <main class="flex-1 flex items-center justify-center p-8">
       <div class="bg-panel rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
           <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2">
-              <label class="text-white text-sm">Show Notes</label>
-              <button @click="showNotes = !showNotes" :class="[
-                'w-12 h-6 rounded-full transition-colors relative px-0.5 flex items-center',
-                showNotes ? 'bg-blue-600 justify-end' : 'bg-gray-600 justify-start'
-              ]">
-                <span class="block w-5 h-5 rounded-full bg-white transition-all"></span>
-              </button>
-            </div>
             <div class="flex items-center gap-2">
               <label class="text-white text-sm">Paint Color:</label>
               <div class="flex gap-1">
@@ -28,6 +19,22 @@
                 <button @click="selectedColor = 'green'" class="w-8 h-8 rounded transition-all border-2" :class="[
                   'bg-green-600 hover:bg-green-500',
                   selectedColor === 'green' ? 'border-white scale-110' : 'border-transparent'
+                ]"></button>
+                <button @click="selectedColor = 'cyan'" class="w-8 h-8 rounded transition-all border-2" :class="[
+                  'bg-cyan-500 hover:bg-cyan-400',
+                  selectedColor === 'cyan' ? 'border-white scale-110' : 'border-transparent'
+                ]"></button>
+                <button @click="selectedColor = 'magenta'" class="w-8 h-8 rounded transition-all border-2" :class="[
+                  'bg-fuchsia-500 hover:bg-fuchsia-400',
+                  selectedColor === 'magenta' ? 'border-white scale-110' : 'border-transparent'
+                ]"></button>
+                <button @click="selectedColor = 'yellow'" class="w-8 h-8 rounded transition-all border-2" :class="[
+                  'bg-yellow-500 hover:bg-yellow-400',
+                  selectedColor === 'yellow' ? 'border-white scale-110' : 'border-transparent'
+                ]"></button>
+                <button @click="selectedColor = 'white'" class="w-8 h-8 rounded transition-all border-2" :class="[
+                  'bg-white hover:bg-gray-100',
+                  selectedColor === 'white' ? 'border-blue-500 scale-110' : 'border-transparent'
                 ]"></button>
                 <button @click="selectedColor = null"
                   class="w-8 h-8 rounded transition-all border-2 bg-gray-800 hover:bg-gray-700 flex items-center justify-center"
@@ -310,35 +317,54 @@ const getMidiNote = (index, color) => {
   // For channel 1, we reset the column index to start from 0
   const adjustedCol = useChannel1 ? col - 3 : col;
 
-  // Get the base note for the first column of each color
-  const baseNote = {
-    blue: 127,
-    red: 115,
-    green: 103
-  }[color];
+  // Get the base notes for each primary color
+  const getBaseNotes = () => {
+    const channel = useChannel1 ? 1 : 0;
+    const blueNote = 127 - (adjustedCol * 36) - rowWithinSection;
+    const redNote = 115 - (adjustedCol * 36) - rowWithinSection;
+    const greenNote = 103 - (adjustedCol * 36) - rowWithinSection;
 
-  // Each column drops by 36 notes (3 sections of 12 notes)
-  const startNoteForColumn = baseNote - (adjustedCol * 36);
-
-  // Calculate the note based on the row within its section
-  const note = startNoteForColumn - rowWithinSection;
-
-  console.log(`MIDI Note Calculation:
-    Color: ${color}
-    Index: ${index}
-    Column: ${col}
-    Adjusted Column: ${adjustedCol}
-    Row: ${row}
-    Row within section: ${rowWithinSection}
-    Base note: ${baseNote}
-    Start note for column: ${startNoteForColumn}
-    Final note: ${note}
-    Channel: ${useChannel1 ? 1 : 0}`);
-
-  return {
-    note: note >= 0 && note <= 127 ? note : 0,
-    channel: useChannel1 ? 1 : 0
+    return {
+      blue: blueNote >= 0 && blueNote <= 127 ? { note: blueNote, channel } : null,
+      red: redNote >= 0 && redNote <= 127 ? { note: redNote, channel } : null,
+      green: greenNote >= 0 && greenNote <= 127 ? { note: greenNote, channel } : null
+    };
   };
+
+  const baseNotes = getBaseNotes();
+  const notes = [];
+
+  // Add notes based on the color combination
+  switch (color) {
+    case 'blue':
+      if (baseNotes.blue) notes.push(baseNotes.blue);
+      break;
+    case 'red':
+      if (baseNotes.red) notes.push(baseNotes.red);
+      break;
+    case 'green':
+      if (baseNotes.green) notes.push(baseNotes.green);
+      break;
+    case 'cyan': // Blue + Green
+      if (baseNotes.blue) notes.push(baseNotes.blue);
+      if (baseNotes.green) notes.push(baseNotes.green);
+      break;
+    case 'magenta': // Blue + Red
+      if (baseNotes.blue) notes.push(baseNotes.blue);
+      if (baseNotes.red) notes.push(baseNotes.red);
+      break;
+    case 'yellow': // Red + Green
+      if (baseNotes.red) notes.push(baseNotes.red);
+      if (baseNotes.green) notes.push(baseNotes.green);
+      break;
+    case 'white': // All colors
+      if (baseNotes.blue) notes.push(baseNotes.blue);
+      if (baseNotes.red) notes.push(baseNotes.red);
+      if (baseNotes.green) notes.push(baseNotes.green);
+      break;
+  }
+
+  return notes;
 };
 
 const playStep = () => {
@@ -348,16 +374,20 @@ const playStep = () => {
   const prevStepIndex = (currentStep.value - 1 + 16) % 16;
   sequence.value[prevStepIndex].forEach((cell, index) => {
     if (cell) {
-      const { note, channel } = getMidiNote(index, cell);
-      sendMidiNoteOff(note, channel);
+      const notes = getMidiNote(index, cell);
+      notes.forEach(({ note, channel }) => {
+        sendMidiNoteOff(note, channel);
+      });
     }
   });
 
   // Then send note on messages for the current step
   sequence.value[currentStep.value].forEach((cell, index) => {
     if (cell) {
-      const { note, channel } = getMidiNote(index, cell);
-      sendMidiNoteOn(note, 100, channel);
+      const notes = getMidiNote(index, cell);
+      notes.forEach(({ note, channel }) => {
+        sendMidiNoteOn(note, 100, channel);
+      });
     }
   });
 
@@ -465,10 +495,6 @@ const downloadMidi = () => {
   track0.setTempo(tempo.value);
   track1.setTempo(tempo.value);
 
-  // Add explicit track name meta events to ensure both tracks are exported
-  track0.addTrackName('Channel 0');
-  track1.addTrackName('Channel 1');
-
   // Process each step in the sequence (16 steps = 1 bar)
   sequence.value.forEach((step, stepIndex) => {
     // Arrays to hold notes for each channel
@@ -478,14 +504,14 @@ const downloadMidi = () => {
     // Collect notes for each channel in this step
     step.forEach((cell, index) => {
       if (cell) {
-        const { note, channel } = getMidiNote(index, cell);
-        if (note > 0) {
+        const notes = getMidiNote(index, cell);
+        notes.forEach(({ note, channel }) => {
           if (channel === 0) {
             channel0Notes.push(note);
           } else {
             channel1Notes.push(note);
           }
-        }
+        });
       }
     });
 
@@ -533,6 +559,10 @@ const downloadMidi = () => {
   a.click();
   window.URL.revokeObjectURL(url);
   document.body.removeChild(a);
+};
+
+const handleShowNotesChanged = (value) => {
+  showNotes.value = value;
 };
 
 onMounted(() => {
