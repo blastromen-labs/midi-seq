@@ -9,7 +9,7 @@
                             :disabled="copiedPattern" :class="{ 'opacity-50 cursor-not-allowed': copiedPattern }">
                             Copy
                             <div
-                                class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                 Shift + Enter
                             </div>
                         </button>
@@ -18,13 +18,17 @@
                             :disabled="!copiedPattern" :class="{ 'opacity-50 cursor-not-allowed': !copiedPattern }">
                             Paste
                             <div
-                                class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                                 Enter
                             </div>
                         </button>
                         <button v-if="copiedPattern" @click="$emit('clear')"
-                            class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm">
+                            class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm relative group">
                             Clear
+                            <div
+                                class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                Clear clipboard
+                            </div>
                         </button>
                     </div>
                     <div class="h-6 w-px bg-gray-700"></div>
