@@ -2,7 +2,7 @@
   <div class="min-h-screen flex flex-col bg-black" tabindex="0" @keydown="handleKeyDown" ref="container">
     <Navbar @midi-output-selected="handleMidiOutputSelected" @show-notes-changed="handleShowNotesChanged"
       @copy="copyCurrentStep" @paste="pasteToCurrentStep" @clear="clearClipboard" :copied-pattern="copiedPattern"
-      :note-length="noteLength" @note-length-changed="handleNoteLengthChanged" />
+      :note-length="noteLength" @note-length-changed="handleNoteLengthChanged" @clear-all-notes="clearAllNotes" />
     <main class="flex-1 flex items-center justify-center p-8 pt-20">
       <div class="bg-panel rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
@@ -571,6 +571,11 @@ const handleShowNotesChanged = (value) => {
 
 const handleNoteLengthChanged = (length) => {
   noteLength.value = length;
+};
+
+const clearAllNotes = () => {
+  // Reset all steps to empty grid
+  sequence.value = Array.from({ length: 16 }, () => Array(60).fill(false));
 };
 
 onMounted(() => {

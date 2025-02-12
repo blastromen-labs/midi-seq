@@ -30,6 +30,14 @@
                                 Clear clipboard
                             </div>
                         </button>
+                        <button @click="$emit('clearAllNotes')"
+                            class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm relative group">
+                            Clear All
+                            <div
+                                class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                                Clear all notes
+                            </div>
+                        </button>
                     </div>
                     <div class="h-6 w-px bg-gray-700"></div>
                     <div class="flex items-center gap-2">
@@ -91,7 +99,7 @@ const selectedDevice = ref('');
 const showNotes = ref(false);
 const selectedNoteLength = ref(props.noteLength);
 
-const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged']);
+const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged', 'clearAllNotes']);
 
 const noteTypeChanged = () => {
     emit('noteLengthChanged', selectedNoteLength.value);
