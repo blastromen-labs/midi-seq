@@ -1,7 +1,8 @@
 <template>
   <div class="min-h-screen flex flex-col bg-black" tabindex="0" @keydown="handleKeyDown" ref="container">
     <Navbar @midi-output-selected="handleMidiOutputSelected" @show-notes-changed="handleShowNotesChanged"
-      @copy="copyCurrentStep" @paste="pasteToCurrentStep" @clear="clearClipboard" :copied-pattern="copiedPattern" />
+      @copy="copyCurrentStep" @paste="pasteToCurrentStep" @clear="clearClipboard" :copied-pattern="copiedPattern"
+      :note-length="noteLength" @note-length-changed="handleNoteLengthChanged" />
     <main class="flex-1 flex items-center justify-center p-8 pt-20">
       <div class="bg-panel rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
@@ -94,7 +95,7 @@
 
         <div class="flex justify-center">
           <MidiGrid :grid-data="currentStepGrid" @toggle-cell="toggleCell" @stop-painting="resetDrawMode"
-            :show-notes="showNotes" />
+            :show-notes="showNotes" :note-length="noteLength" />
         </div>
 
         <!-- Add tempo controls -->
@@ -160,8 +161,10 @@ const showNotes = ref(false);
 const selectedColor = ref('blue');
 const tempo = ref(120);
 const midiOutput = ref(null);
+const noteLength = ref('16');
 
 // Create a 16-step sequence, each step having a 5x12 grid
+// Now each cell will be an object with color and noteLength, or false
 const sequence = ref(Array.from({ length: 16 }, () => Array(60).fill(false)));
 
 const currentStepDisplay = computed(() => currentStep.value + 1);
@@ -211,7 +214,16 @@ const sendMidiNoteOff = (note, channel = 0) => {
 const drawMode = ref(null);
 
 // Update toggleCell function
-const toggleCell = ({ index, value }) => {
+const toggleCell = ({ index, value, updateNoteLength, noteLength: newNoteLength }) => {
+  if (updateNoteLength && sequence.value[currentStep.value][index]) {
+    // Update just the note length of an existing cell
+    sequence.value[currentStep.value][index] = {
+      ...sequence.value[currentStep.value][index],
+      noteLength: newNoteLength
+    };
+    return;
+  }
+
   // On first cell of drawing session, determine the mode
   if (drawMode.value === null) {
     drawMode.value = sequence.value[currentStep.value][index] ? 'erase' : 'paint';
@@ -221,7 +233,10 @@ const toggleCell = ({ index, value }) => {
   if (drawMode.value === 'paint') {
     // Only paint empty cells
     if (!sequence.value[currentStep.value][index]) {
-      sequence.value[currentStep.value][index] = selectedColor.value;
+      sequence.value[currentStep.value][index] = {
+        color: selectedColor.value,
+        noteLength: noteLength.value
+      };
     }
   } else if (drawMode.value === 'erase') {
     // Only erase painted cells
@@ -348,7 +363,7 @@ const playStep = () => {
   const prevStepIndex = (currentStep.value - 1 + 16) % 16;
   sequence.value[prevStepIndex].forEach((cell, index) => {
     if (cell) {
-      const notes = getMidiNote(index, cell);
+      const notes = getMidiNote(index, cell.color);
       notes.forEach(({ note, channel }) => {
         sendMidiNoteOff(note, channel);
       });
@@ -358,9 +373,14 @@ const playStep = () => {
   // Then send note on messages for the current step
   sequence.value[currentStep.value].forEach((cell, index) => {
     if (cell) {
-      const notes = getMidiNote(index, cell);
+      const notes = getMidiNote(index, cell.color);
       notes.forEach(({ note, channel }) => {
         sendMidiNoteOn(note, 100, channel);
+        // Schedule note off based on note length
+        const noteDuration = parseInt(cell.noteLength);
+        setTimeout(() => {
+          sendMidiNoteOff(note, channel);
+        }, (intervalTime.value / (noteDuration / 16)));
       });
     }
   });
@@ -409,8 +429,8 @@ const shiftNotes = (direction) => {
   for (let row = 0; row < 12; row++) {
     for (let col = 0; col < 5; col++) {
       const index = row * 5 + col;
-      const currentColor = currentPattern[index];
-      if (!currentColor) continue;
+      const currentCell = currentPattern[index];
+      if (!currentCell) continue;
 
       let newRow = row;
       let newCol = col;
@@ -452,7 +472,7 @@ const shiftNotes = (direction) => {
       const newSection = Math.floor(newRow / notesPerSection);
       if (newSection === currentSection) {
         const newIndex = newRow * 5 + newCol;
-        newPattern[newIndex] = currentColor; // Preserve the color
+        newPattern[newIndex] = { ...currentCell }; // Copy the cell object
       }
     }
   }
@@ -474,16 +494,20 @@ const downloadMidi = () => {
     // Arrays to hold notes for each channel
     const channel0Notes = [];
     const channel1Notes = [];
+    const channel0Lengths = [];
+    const channel1Lengths = [];
 
     // Collect notes for each channel in this step
     step.forEach((cell, index) => {
       if (cell) {
-        const notes = getMidiNote(index, cell);
+        const notes = getMidiNote(index, cell.color);
         notes.forEach(({ note, channel }) => {
           if (channel === 0) {
             channel0Notes.push(note);
+            channel0Lengths.push(cell.noteLength);
           } else {
             channel1Notes.push(note);
+            channel1Lengths.push(cell.noteLength);
           }
         });
       }
@@ -492,29 +516,37 @@ const downloadMidi = () => {
     // Calculate tick for the current step (each 16th note is 32 ticks apart)
     const currentTick = stepIndex * 32;
 
-    // Create an event for channel 0 if there are notes
-    if (channel0Notes.length > 0) {
-      const noteEvent0 = new MidiWriter.NoteEvent({
-        pitch: channel0Notes,
-        duration: '16',
-        velocity: 100,
-        channel: 1, // Writing channel 0 to MIDI channel 1
-        tick: currentTick
-      });
-      track0.addEvent(noteEvent0);
-    }
+    // Create events for each unique note length in channel 0
+    const uniqueLengths0 = [...new Set(channel0Lengths)];
+    uniqueLengths0.forEach(length => {
+      const notesWithLength = channel0Notes.filter((_, i) => channel0Lengths[i] === length);
+      if (notesWithLength.length > 0) {
+        const noteEvent0 = new MidiWriter.NoteEvent({
+          pitch: notesWithLength,
+          duration: length,
+          velocity: 100,
+          channel: 1,
+          tick: currentTick
+        });
+        track0.addEvent(noteEvent0);
+      }
+    });
 
-    // Create an event for channel 1 if there are notes
-    if (channel1Notes.length > 0) {
-      const noteEvent1 = new MidiWriter.NoteEvent({
-        pitch: channel1Notes,
-        duration: '16',
-        velocity: 100,
-        channel: 2, // Writing channel 1 to MIDI channel 2
-        tick: currentTick
-      });
-      track1.addEvent(noteEvent1);
-    }
+    // Create events for each unique note length in channel 1
+    const uniqueLengths1 = [...new Set(channel1Lengths)];
+    uniqueLengths1.forEach(length => {
+      const notesWithLength = channel1Notes.filter((_, i) => channel1Lengths[i] === length);
+      if (notesWithLength.length > 0) {
+        const noteEvent1 = new MidiWriter.NoteEvent({
+          pitch: notesWithLength,
+          duration: length,
+          velocity: 100,
+          channel: 2,
+          tick: currentTick
+        });
+        track1.addEvent(noteEvent1);
+      }
+    });
   });
 
   // Create a new MIDI file with both tracks
@@ -523,8 +555,6 @@ const downloadMidi = () => {
 
   // Create a Blob from the MIDI data
   const blob = new Blob([writer.buildFile()], { type: 'audio/midi' });
-
-  // Create a download link and trigger it
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -537,6 +567,10 @@ const downloadMidi = () => {
 
 const handleShowNotesChanged = (value) => {
   showNotes.value = value;
+};
+
+const handleNoteLengthChanged = (length) => {
+  noteLength.value = length;
 };
 
 onMounted(() => {

@@ -3,10 +3,16 @@
         <div v-for="(cell, index) in gridData" :key="index" @mousedown.prevent="startPainting($event, index)"
             @mouseenter="handleMouseEnter(index)" :data-index="index" :class="[
                 'w-12 h-12 cursor-pointer transition-colors relative border-r border-b border-gray-600',
-                cell ? getColorClass(cell) : 'bg-grid-cell hover:bg-gray-800',
+                cell ? getColorClass(cell.color) : 'bg-grid-cell hover:bg-gray-800',
                 index % 5 === 0 ? 'border-l' : '',
                 index < 5 ? 'border-t' : ''
-            ]">
+            ]" @contextmenu.prevent="cycleNoteLength(index)">
+            <!-- Note length indicator -->
+            <div v-if="cell" class="absolute bottom-1 right-1 flex gap-0.5">
+                <div v-for="dot in getNoteLengthDots(cell.noteLength)" :key="dot"
+                    class="w-1 h-1 bg-black opacity-50 rounded-full">
+                </div>
+            </div>
             <template v-if="showNotes">
                 <!-- Blue note (top-left) -->
                 <span class="absolute top-1 left-1 text-xs opacity-50 text-blue-300">
@@ -36,6 +42,10 @@ const props = defineProps({
     showNotes: {
         type: Boolean,
         default: true
+    },
+    noteLength: {
+        type: String,
+        default: '16'
     }
 });
 
@@ -62,9 +72,27 @@ const handleMouseEnter = (index) => {
     }
 };
 
-const getColorClass = (cell) => {
+const cycleNoteLength = (index) => {
+    const cell = props.gridData[index];
+    if (!cell) return;
+
+    const lengths = ['16', '32', '64'];
+    const currentIndex = lengths.indexOf(cell.noteLength);
+    const nextIndex = (currentIndex + 1) % lengths.length;
+    const newLength = lengths[nextIndex];
+
+    // Update the cell with the new note length
+    emit('toggle-cell', {
+        index,
+        value: true,
+        updateNoteLength: true,
+        noteLength: newLength
+    });
+};
+
+const getColorClass = (color) => {
     // Return the proper Tailwind background class based on the color assigned
-    switch (cell) {
+    switch (color) {
         case 'blue': return 'bg-blue-600';
         case 'red': return 'bg-red-600';
         case 'green': return 'bg-green-600';
@@ -113,6 +141,15 @@ const getGreenNote = (index) => {
         return note >= 0 && note <= 127 ? note : '';
     }
     return '';
+};
+
+const getNoteLengthDots = (noteLength) => {
+    switch (noteLength) {
+        case '64': return 3; // Three dots for 1/64
+        case '32': return 2; // Two dots for 1/32
+        case '16': return 1; // One dot for 1/16
+        default: return 1;
+    }
 };
 </script>
 
