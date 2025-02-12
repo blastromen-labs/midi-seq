@@ -1,7 +1,8 @@
 <template>
   <div class="min-h-screen flex flex-col bg-black" tabindex="0" @keydown="handleKeyDown" ref="container">
-    <Navbar @midi-output-selected="handleMidiOutputSelected" @show-notes-changed="handleShowNotesChanged" />
-    <main class="flex-1 flex items-center justify-center p-8">
+    <Navbar @midi-output-selected="handleMidiOutputSelected" @show-notes-changed="handleShowNotesChanged"
+      @copy="copyCurrentStep" @paste="pasteToCurrentStep" @clear="clearClipboard" :copied-pattern="copiedPattern" />
+    <main class="flex-1 flex items-center justify-center p-8 pt-20">
       <div class="bg-panel rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
           <div class="flex items-center gap-4">
@@ -45,33 +46,6 @@
                 </button>
               </div>
             </div>
-          </div>
-        </div>
-
-        <div class="flex gap-2 mb-4">
-          <div class="flex gap-2 ml-4">
-            <button @click="copyCurrentStep"
-              class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm relative group"
-              :disabled="!!copiedPattern" :class="{ 'opacity-50 cursor-not-allowed': !!copiedPattern }">
-              Copy
-              <div
-                class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Shift + Enter
-              </div>
-            </button>
-            <button @click="pasteToCurrentStep"
-              class="px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700 text-sm relative group"
-              :disabled="!copiedPattern" :class="{ 'opacity-50 cursor-not-allowed': !copiedPattern }">
-              Paste
-              <div
-                class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Enter
-              </div>
-            </button>
-            <button v-if="copiedPattern" @click="clearClipboard"
-              class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm">
-              Clear
-            </button>
           </div>
         </div>
 

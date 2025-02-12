@@ -1,7 +1,31 @@
 <template>
-    <nav class="w-full bg-gray-900 border-b border-gray-800">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div class="flex items-center justify-end">
+    <nav class="fixed top-0 left-0 right-0 bg-gray-900 border-b border-gray-800 z-10">
+        <div class="w-full px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <button @click="$emit('copy')"
+                        class="px-3 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-sm relative group"
+                        :disabled="copiedPattern" :class="{ 'opacity-50 cursor-not-allowed': copiedPattern }">
+                        Copy
+                        <div
+                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Shift + Enter
+                        </div>
+                    </button>
+                    <button @click="$emit('paste')"
+                        class="px-3 py-1 rounded bg-yellow-600 text-white hover:bg-yellow-700 text-sm relative group"
+                        :disabled="!copiedPattern" :class="{ 'opacity-50 cursor-not-allowed': !copiedPattern }">
+                        Paste
+                        <div
+                            class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            Enter
+                        </div>
+                    </button>
+                    <button v-if="copiedPattern" @click="$emit('clear')"
+                        class="px-3 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-sm">
+                        Clear
+                    </button>
+                </div>
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-2">
                         <label class="text-white text-sm">Show Notes</label>
@@ -34,12 +58,19 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 
+const props = defineProps({
+    copiedPattern: {
+        type: Array,
+        default: null
+    }
+});
+
 const midiSupported = ref(false);
 const midiOutputs = ref([]);
 const selectedDevice = ref('');
 const showNotes = ref(false);
 
-const emit = defineEmits(['midiOutputSelected', 'showNotesChanged']);
+const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear']);
 
 const toggleShowNotes = () => {
     showNotes.value = !showNotes.value;
