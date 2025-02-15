@@ -2,7 +2,8 @@
   <div class="min-h-screen flex flex-col bg-black" tabindex="0" @keydown="handleKeyDown" ref="container">
     <Navbar @midi-output-selected="handleMidiOutputSelected" @show-notes-changed="handleShowNotesChanged"
       @copy="copyCurrentStep" @paste="pasteToCurrentStep" @clear="clearClipboard" :copied-pattern="copiedPattern"
-      :note-length="noteLength" @note-length-changed="handleNoteLengthChanged" @clear-all-notes="clearAllNotes" />
+      :note-length="noteLength" @note-length-changed="handleNoteLengthChanged" @clear-all-notes="clearAllNotes"
+      :pattern-length="patternLength" @pattern-length-changed="handlePatternLengthChanged" />
     <main class="flex-1 flex items-center justify-center p-8 pt-20">
       <div class="bg-panel rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
@@ -119,7 +120,7 @@
           <div class="text-white flex items-center justify-center gap-1">
             <span class="w-6 text-right">{{ currentStepDisplay }}</span>
             <span class="text-gray-500">/</span>
-            <span class="w-6 text-left">16</span>
+            <span class="w-6 text-left">{{ patternLength }}</span>
           </div>
           <button @click="nextStep"
             class="w-10 h-10 flex items-center justify-center rounded bg-gray-700 text-white hover:bg-gray-600">
@@ -162,10 +163,10 @@ const selectedColor = ref('blue');
 const tempo = ref(120);
 const midiOutput = ref(null);
 const noteLength = ref('16');
+const patternLength = ref(16);
 
-// Create a 16-step sequence, each step having a 5x12 grid
-// Now each cell will be an object with color and noteLength, or false
-const sequence = ref(Array.from({ length: 16 }, () => Array(60).fill(false)));
+// Create a sequence with dynamic length
+const sequence = ref(Array.from({ length: patternLength.value }, () => Array(60).fill(false)));
 
 const currentStepDisplay = computed(() => currentStep.value + 1);
 const currentStepGrid = computed(() => sequence.value[currentStep.value]);
@@ -251,11 +252,11 @@ const resetDrawMode = () => {
 };
 
 const previousStep = () => {
-  currentStep.value = (currentStep.value - 1 + 16) % 16;
+  currentStep.value = (currentStep.value - 1 + patternLength.value) % patternLength.value;
 };
 
 const nextStep = () => {
-  currentStep.value = (currentStep.value + 1) % 16;
+  currentStep.value = (currentStep.value + 1) % patternLength.value;
 };
 
 const copyCurrentStep = () => {
@@ -357,35 +358,40 @@ const getMidiNote = (index, color) => {
 };
 
 const playStep = () => {
-  if (!midiOutput.value) return;
+  if (!isPlaying.value) return;
 
-  // First, send note off messages for the previous step's notes
-  const prevStepIndex = (currentStep.value - 1 + 16) % 16;
-  sequence.value[prevStepIndex].forEach((cell, index) => {
+  // Play current step
+  const currentStepNotes = sequence.value[currentStep.value];
+  currentStepNotes.forEach((cell, index) => {
     if (cell) {
-      const notes = getMidiNote(index, cell.color);
-      notes.forEach(({ note, channel }) => {
-        sendMidiNoteOff(note, channel);
-      });
+      const col = index % 5;
+      const row = Math.floor(index / 5);
+      const useChannel1 = col >= 3;
+      const adjustedCol = useChannel1 ? col - 3 : col;
+
+      // Calculate note numbers for each color section
+      const blueNote = row < 12 ? 127 - (adjustedCol * 36) - row : null;
+      const redNote = row < 12 ? 115 - (adjustedCol * 36) - row : null;
+      const greenNote = row < 12 ? 103 - (adjustedCol * 36) - row : null;
+
+      // Send MIDI notes based on cell color
+      if (cell.color === 'blue' && blueNote >= 0 && blueNote <= 127) {
+        sendMidiNoteOn(blueNote, 100, useChannel1 ? 1 : 0);
+        setTimeout(() => sendMidiNoteOff(blueNote, useChannel1 ? 1 : 0), 100);
+      }
+      if (cell.color === 'red' && redNote >= 0 && redNote <= 127) {
+        sendMidiNoteOn(redNote, 100, useChannel1 ? 1 : 0);
+        setTimeout(() => sendMidiNoteOff(redNote, useChannel1 ? 1 : 0), 100);
+      }
+      if (cell.color === 'green' && greenNote >= 0 && greenNote <= 127) {
+        sendMidiNoteOn(greenNote, 100, useChannel1 ? 1 : 0);
+        setTimeout(() => sendMidiNoteOff(greenNote, useChannel1 ? 1 : 0), 100);
+      }
     }
   });
 
-  // Then send note on messages for the current step
-  sequence.value[currentStep.value].forEach((cell, index) => {
-    if (cell) {
-      const notes = getMidiNote(index, cell.color);
-      notes.forEach(({ note, channel }) => {
-        sendMidiNoteOn(note, 100, channel);
-        // Schedule note off based on note length
-        const noteDuration = parseInt(cell.noteLength);
-        setTimeout(() => {
-          sendMidiNoteOff(note, channel);
-        }, (intervalTime.value / (noteDuration / 16)));
-      });
-    }
-  });
-
-  currentStep.value = (currentStep.value + 1) % 16;
+  // Move to next step
+  currentStep.value = (currentStep.value + 1) % patternLength.value;
 };
 
 const handleKeyDown = (event) => {
@@ -575,7 +581,25 @@ const handleNoteLengthChanged = (length) => {
 
 const clearAllNotes = () => {
   // Reset all steps to empty grid
-  sequence.value = Array.from({ length: 16 }, () => Array(60).fill(false));
+  sequence.value = Array.from({ length: patternLength.value }, () => Array(60).fill(false));
+};
+
+const handlePatternLengthChanged = (newLength) => {
+  // Store current sequence
+  const currentSequence = sequence.value;
+
+  // Create new sequence with new length
+  sequence.value = Array.from({ length: newLength }, (_, index) => {
+    // Copy existing steps if available, otherwise create empty step
+    return index < currentSequence.length ? currentSequence[index] : Array(60).fill(false);
+  });
+
+  patternLength.value = newLength;
+
+  // Ensure currentStep is within bounds
+  if (currentStep.value >= newLength) {
+    currentStep.value = newLength - 1;
+  }
 };
 
 onMounted(() => {

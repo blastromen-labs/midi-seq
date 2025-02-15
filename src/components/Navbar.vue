@@ -49,6 +49,12 @@
                             <option value="64">1/64</option>
                         </select>
                     </div>
+                    <div class="h-6 w-px bg-gray-700"></div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-white text-sm">Pattern Length:</label>
+                        <input type="number" v-model="patternLength" @change="patternLengthChanged" min="1" max="64"
+                            class="bg-gray-700 text-white rounded w-16 px-3 py-1.5 text-sm border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
+                    </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-2">
@@ -90,6 +96,10 @@ const props = defineProps({
     noteLength: {
         type: String,
         default: '16'
+    },
+    patternLength: {
+        type: Number,
+        default: 16
     }
 });
 
@@ -98,8 +108,9 @@ const midiOutputs = ref([]);
 const selectedDevice = ref('');
 const showNotes = ref(false);
 const selectedNoteLength = ref(props.noteLength);
+const patternLength = ref(props.patternLength);
 
-const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged', 'clearAllNotes']);
+const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged', 'clearAllNotes', 'patternLengthChanged']);
 
 const noteTypeChanged = () => {
     emit('noteLengthChanged', selectedNoteLength.value);
@@ -108,6 +119,13 @@ const noteTypeChanged = () => {
 const toggleShowNotes = () => {
     showNotes.value = !showNotes.value;
     emit('showNotesChanged', showNotes.value);
+};
+
+const patternLengthChanged = () => {
+    // Ensure the value is between 1 and 64
+    if (patternLength.value < 1) patternLength.value = 1;
+    if (patternLength.value > 64) patternLength.value = 64;
+    emit('patternLengthChanged', patternLength.value);
 };
 
 const initializeMidi = async () => {
