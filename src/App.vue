@@ -3,9 +3,10 @@
     <Navbar @midi-output-selected="handleMidiOutputSelected" @show-notes-changed="handleShowNotesChanged"
       @copy="copyCurrentStep" @paste="pasteToCurrentStep" @clear="clearClipboard" :copied-pattern="copiedPattern"
       :note-length="noteLength" @note-length-changed="handleNoteLengthChanged" @clear-all-notes="clearAllNotes"
-      :pattern-length="patternLength" @pattern-length-changed="handlePatternLengthChanged" />
+      :pattern-length="patternLength" @pattern-length-changed="handlePatternLengthChanged" :velocity="velocity"
+      @velocity-changed="handleVelocityChanged" />
     <main class="flex-1 flex items-center justify-center p-8 pt-20">
-      <div class="bg-panel rounded-lg p-6 shadow-xl w-[500px]">
+      <div class="bg-zinc-900 rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
           <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">
@@ -164,6 +165,7 @@ const tempo = ref(120);
 const midiOutput = ref(null);
 const noteLength = ref('16');
 const patternLength = ref(16);
+const velocity = ref(100);
 
 // Create a sequence with dynamic length
 const sequence = ref(Array.from({ length: patternLength.value }, () => Array(60).fill(false)));
@@ -236,7 +238,8 @@ const toggleCell = ({ index, value, updateNoteLength, noteLength: newNoteLength 
     if (!sequence.value[currentStep.value][index]) {
       sequence.value[currentStep.value][index] = {
         color: selectedColor.value,
-        noteLength: noteLength.value
+        noteLength: noteLength.value,
+        velocity: velocity.value
       };
     }
   } else if (drawMode.value === 'erase') {
@@ -374,18 +377,73 @@ const playStep = () => {
       const redNote = row < 12 ? 115 - (adjustedCol * 36) - row : null;
       const greenNote = row < 12 ? 103 - (adjustedCol * 36) - row : null;
 
-      // Send MIDI notes based on cell color
-      if (cell.color === 'blue' && blueNote >= 0 && blueNote <= 127) {
-        sendMidiNoteOn(blueNote, 100, useChannel1 ? 1 : 0);
-        setTimeout(() => sendMidiNoteOff(blueNote, useChannel1 ? 1 : 0), 100);
-      }
-      if (cell.color === 'red' && redNote >= 0 && redNote <= 127) {
-        sendMidiNoteOn(redNote, 100, useChannel1 ? 1 : 0);
-        setTimeout(() => sendMidiNoteOff(redNote, useChannel1 ? 1 : 0), 100);
-      }
-      if (cell.color === 'green' && greenNote >= 0 && greenNote <= 127) {
-        sendMidiNoteOn(greenNote, 100, useChannel1 ? 1 : 0);
-        setTimeout(() => sendMidiNoteOff(greenNote, useChannel1 ? 1 : 0), 100);
+      const channel = useChannel1 ? 1 : 0;
+      const velocity = cell.velocity || 100;
+
+      // Send MIDI notes based on cell color with cell's velocity
+      switch (cell.color) {
+        case 'blue':
+          if (blueNote >= 0 && blueNote <= 127) {
+            sendMidiNoteOn(blueNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(blueNote, channel), 100);
+          }
+          break;
+        case 'red':
+          if (redNote >= 0 && redNote <= 127) {
+            sendMidiNoteOn(redNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(redNote, channel), 100);
+          }
+          break;
+        case 'green':
+          if (greenNote >= 0 && greenNote <= 127) {
+            sendMidiNoteOn(greenNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(greenNote, channel), 100);
+          }
+          break;
+        case 'cyan': // Blue + Green
+          if (blueNote >= 0 && blueNote <= 127) {
+            sendMidiNoteOn(blueNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(blueNote, channel), 100);
+          }
+          if (greenNote >= 0 && greenNote <= 127) {
+            sendMidiNoteOn(greenNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(greenNote, channel), 100);
+          }
+          break;
+        case 'magenta': // Blue + Red
+          if (blueNote >= 0 && blueNote <= 127) {
+            sendMidiNoteOn(blueNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(blueNote, channel), 100);
+          }
+          if (redNote >= 0 && redNote <= 127) {
+            sendMidiNoteOn(redNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(redNote, channel), 100);
+          }
+          break;
+        case 'yellow': // Red + Green
+          if (redNote >= 0 && redNote <= 127) {
+            sendMidiNoteOn(redNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(redNote, channel), 100);
+          }
+          if (greenNote >= 0 && greenNote <= 127) {
+            sendMidiNoteOn(greenNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(greenNote, channel), 100);
+          }
+          break;
+        case 'white': // All colors
+          if (blueNote >= 0 && blueNote <= 127) {
+            sendMidiNoteOn(blueNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(blueNote, channel), 100);
+          }
+          if (redNote >= 0 && redNote <= 127) {
+            sendMidiNoteOn(redNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(redNote, channel), 100);
+          }
+          if (greenNote >= 0 && greenNote <= 127) {
+            sendMidiNoteOn(greenNote, velocity, channel);
+            setTimeout(() => sendMidiNoteOff(greenNote, channel), 100);
+          }
+          break;
       }
     }
   });
@@ -495,11 +553,16 @@ const downloadMidi = () => {
   track0.setTempo(tempo.value);
   track1.setTempo(tempo.value);
 
-  // Process each step in the sequence (16 steps = 1 bar)
+  // Process each step in the sequence
   sequence.value.forEach((step, stepIndex) => {
-    // Arrays to hold notes for each channel
+    // Calculate tick for the current step (each 16th note is 32 ticks apart)
+    const currentTick = stepIndex * 32;
+
+    // Create a single event for all notes in this step for each channel
     const channel0Notes = [];
     const channel1Notes = [];
+    const channel0Velocities = [];
+    const channel1Velocities = [];
     const channel0Lengths = [];
     const channel1Lengths = [];
 
@@ -510,45 +573,50 @@ const downloadMidi = () => {
         notes.forEach(({ note, channel }) => {
           if (channel === 0) {
             channel0Notes.push(note);
-            channel0Lengths.push(cell.noteLength);
+            channel0Velocities.push(cell.velocity || 100);
+            channel0Lengths.push(cell.noteLength || '16');
           } else {
             channel1Notes.push(note);
-            channel1Lengths.push(cell.noteLength);
+            channel1Velocities.push(cell.velocity || 100);
+            channel1Lengths.push(cell.noteLength || '16');
           }
         });
       }
     });
 
-    // Calculate tick for the current step (each 16th note is 32 ticks apart)
-    const currentTick = stepIndex * 32;
-
-    // Create events for each unique note length in channel 0
-    const uniqueLengths0 = [...new Set(channel0Lengths)];
-    uniqueLengths0.forEach(length => {
-      const notesWithLength = channel0Notes.filter((_, i) => channel0Lengths[i] === length);
-      if (notesWithLength.length > 0) {
+    // Group notes by unique combinations of length and velocity for channel 0
+    const uniqueCombos0 = new Set(channel0Notes.map((_, i) => `${channel0Lengths[i]}-${channel0Velocities[i]}`));
+    uniqueCombos0.forEach(combo => {
+      const [length, velocity] = combo.split('-');
+      const notesWithCombo = channel0Notes.filter((_, i) =>
+        channel0Lengths[i] === length && channel0Velocities[i] === parseInt(velocity)
+      );
+      if (notesWithCombo.length > 0) {
         const noteEvent0 = new MidiWriter.NoteEvent({
-          pitch: notesWithLength,
+          pitch: notesWithCombo,
           duration: length,
-          velocity: 100,
+          velocity: parseInt(velocity),
           channel: 1,
-          tick: currentTick
+          tick: stepIndex === 0 ? 0 : currentTick // Force tick 0 for first step
         });
         track0.addEvent(noteEvent0);
       }
     });
 
-    // Create events for each unique note length in channel 1
-    const uniqueLengths1 = [...new Set(channel1Lengths)];
-    uniqueLengths1.forEach(length => {
-      const notesWithLength = channel1Notes.filter((_, i) => channel1Lengths[i] === length);
-      if (notesWithLength.length > 0) {
+    // Group notes by unique combinations of length and velocity for channel 1
+    const uniqueCombos1 = new Set(channel1Notes.map((_, i) => `${channel1Lengths[i]}-${channel1Velocities[i]}`));
+    uniqueCombos1.forEach(combo => {
+      const [length, velocity] = combo.split('-');
+      const notesWithCombo = channel1Notes.filter((_, i) =>
+        channel1Lengths[i] === length && channel1Velocities[i] === parseInt(velocity)
+      );
+      if (notesWithCombo.length > 0) {
         const noteEvent1 = new MidiWriter.NoteEvent({
-          pitch: notesWithLength,
+          pitch: notesWithCombo,
           duration: length,
-          velocity: 100,
+          velocity: parseInt(velocity),
           channel: 2,
-          tick: currentTick
+          tick: stepIndex === 0 ? 0 : currentTick // Force tick 0 for first step
         });
         track1.addEvent(noteEvent1);
       }
@@ -600,6 +668,10 @@ const handlePatternLengthChanged = (newLength) => {
   if (currentStep.value >= newLength) {
     currentStep.value = newLength - 1;
   }
+};
+
+const handleVelocityChanged = (newVelocity) => {
+  velocity.value = newVelocity;
 };
 
 onMounted(() => {
