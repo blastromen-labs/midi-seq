@@ -55,6 +55,19 @@
                         <input type="number" v-model="patternLength" @change="patternLengthChanged" min="1" max="64"
                             class="bg-gray-700 text-white rounded w-16 px-3 py-1.5 text-sm border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none" />
                     </div>
+                    <div class="h-6 w-px bg-gray-700"></div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-white text-sm">Velocity:</label>
+                        <select v-model="selectedVelocity" @change="velocityChanged"
+                            class="bg-gray-700 text-white rounded px-3 py-1.5 text-sm border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                            <option value="1">1</option>
+                            <option value="3">3</option>
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="flex items-center gap-4">
                     <div class="flex items-center gap-2">
@@ -100,6 +113,10 @@ const props = defineProps({
     patternLength: {
         type: Number,
         default: 16
+    },
+    velocity: {
+        type: Number,
+        default: 100
     }
 });
 
@@ -109,8 +126,9 @@ const selectedDevice = ref('');
 const showNotes = ref(false);
 const selectedNoteLength = ref(props.noteLength);
 const patternLength = ref(props.patternLength);
+const selectedVelocity = ref(props.velocity);
 
-const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged', 'clearAllNotes', 'patternLengthChanged']);
+const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged', 'clearAllNotes', 'patternLengthChanged', 'velocityChanged']);
 
 const noteTypeChanged = () => {
     emit('noteLengthChanged', selectedNoteLength.value);
@@ -126,6 +144,10 @@ const patternLengthChanged = () => {
     if (patternLength.value < 1) patternLength.value = 1;
     if (patternLength.value > 64) patternLength.value = 64;
     emit('patternLengthChanged', patternLength.value);
+};
+
+const velocityChanged = () => {
+    emit('velocityChanged', parseInt(selectedVelocity.value));
 };
 
 const initializeMidi = async () => {
