@@ -592,13 +592,19 @@ const downloadMidi = () => {
         channel0Lengths[i] === length && channel0Velocities[i] === parseInt(velocity)
       );
       if (notesWithCombo.length > 0) {
+
         const noteEvent0 = new MidiWriter.NoteEvent({
           pitch: notesWithCombo,
-          duration: length,
+          duration: `${length}`,
           velocity: parseInt(velocity),
           channel: 1,
-          tick: stepIndex === 0 ? 0 : currentTick // Force tick 0 for first step
+          tick: currentTick,
         });
+        // this is important fix because the library kept adding 32 ticks to events at step 0. Do not remove this.
+        if (currentTick === 0) {
+          noteEvent0.tick = 0;
+        }
+
         track0.addEvent(noteEvent0);
       }
     });
@@ -611,13 +617,19 @@ const downloadMidi = () => {
         channel1Lengths[i] === length && channel1Velocities[i] === parseInt(velocity)
       );
       if (notesWithCombo.length > 0) {
+
         const noteEvent1 = new MidiWriter.NoteEvent({
           pitch: notesWithCombo,
           duration: length,
           velocity: parseInt(velocity),
           channel: 2,
-          tick: stepIndex === 0 ? 0 : currentTick // Force tick 0 for first step
+          tick: currentTick
         });
+
+        if (currentTick === 0) {
+          noteEvent1.tick = 0;
+        }
+
         track1.addEvent(noteEvent1);
       }
     });
