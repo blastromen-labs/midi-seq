@@ -6,84 +6,123 @@
       :pattern-length="patternLength" @pattern-length-changed="handlePatternLengthChanged" :velocity="velocity"
       @velocity-changed="handleVelocityChanged" :step-length="stepLength"
       @step-length-changed="handleStepLengthChanged" />
-    <main class="flex-1 flex items-center justify-center p-8 pt-20">
+    <main class="flex-1 flex items-start justify-center p-4 pt-16">
       <div class="bg-zinc-900 rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
           <div class="flex items-center gap-4">
             <div class="flex items-center gap-2">
               <label class="text-white text-sm">Paint Color:</label>
               <div class="flex gap-1">
-                <button @click="selectedColor = 'blue'" class="w-8 h-8 rounded transition-all border-2" :class="[
-                  'bg-blue-600 hover:bg-blue-500',
-                  selectedColor === 'blue' ? 'border-white scale-110' : 'border-transparent'
-                ]"></button>
-                <button @click="selectedColor = 'red'" class="w-8 h-8 rounded transition-all border-2" :class="[
-                  'bg-red-600 hover:bg-red-500',
-                  selectedColor === 'red' ? 'border-white scale-110' : 'border-transparent'
-                ]"></button>
-                <button @click="selectedColor = 'green'" class="w-8 h-8 rounded transition-all border-2" :class="[
-                  'bg-green-600 hover:bg-green-500',
-                  selectedColor === 'green' ? 'border-white scale-110' : 'border-transparent'
-                ]"></button>
-                <button @click="selectedColor = 'cyan'" class="w-8 h-8 rounded transition-all border-2" :class="[
-                  'bg-cyan-500 hover:bg-cyan-400',
-                  selectedColor === 'cyan' ? 'border-white scale-110' : 'border-transparent'
-                ]"></button>
-                <button @click="selectedColor = 'magenta'" class="w-8 h-8 rounded transition-all border-2" :class="[
-                  'bg-fuchsia-500 hover:bg-fuchsia-400',
-                  selectedColor === 'magenta' ? 'border-white scale-110' : 'border-transparent'
-                ]"></button>
-                <button @click="selectedColor = 'yellow'" class="w-8 h-8 rounded transition-all border-2" :class="[
-                  'bg-yellow-500 hover:bg-yellow-400',
-                  selectedColor === 'yellow' ? 'border-white scale-110' : 'border-transparent'
-                ]"></button>
-                <button @click="selectedColor = 'white'" class="w-8 h-8 rounded transition-all border-2" :class="[
-                  'bg-white hover:bg-gray-100',
-                  selectedColor === 'white' ? 'border-blue-500 scale-110' : 'border-transparent'
-                ]"></button>
+                <button @click="selectedColor = 'blue'" class="w-8 h-8 rounded transition-all border-2 relative group"
+                  :class="[
+                    'bg-blue-600 hover:bg-blue-500',
+                    selectedColor === 'blue' ? 'border-white scale-110' : 'border-transparent'
+                  ]">
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 1
+                  </div>
+                </button>
+                <button @click="selectedColor = 'red'" class="w-8 h-8 rounded transition-all border-2 relative group"
+                  :class="[
+                    'bg-red-600 hover:bg-red-500',
+                    selectedColor === 'red' ? 'border-white scale-110' : 'border-transparent'
+                  ]">
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 2
+                  </div>
+                </button>
+                <button @click="selectedColor = 'green'" class="w-8 h-8 rounded transition-all border-2 relative group"
+                  :class="[
+                    'bg-green-600 hover:bg-green-500',
+                    selectedColor === 'green' ? 'border-white scale-110' : 'border-transparent'
+                  ]">
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 3
+                  </div>
+                </button>
+                <button @click="selectedColor = 'cyan'" class="w-8 h-8 rounded transition-all border-2 relative group"
+                  :class="[
+                    'bg-cyan-500 hover:bg-cyan-400',
+                    selectedColor === 'cyan' ? 'border-white scale-110' : 'border-transparent'
+                  ]">
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 4
+                  </div>
+                </button>
+                <button @click="selectedColor = 'magenta'"
+                  class="w-8 h-8 rounded transition-all border-2 relative group" :class="[
+                    'bg-fuchsia-500 hover:bg-fuchsia-400',
+                    selectedColor === 'magenta' ? 'border-white scale-110' : 'border-transparent'
+                  ]">
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 5
+                  </div>
+                </button>
+                <button @click="selectedColor = 'yellow'" class="w-8 h-8 rounded transition-all border-2 relative group"
+                  :class="[
+                    'bg-yellow-500 hover:bg-yellow-400',
+                    selectedColor === 'yellow' ? 'border-white scale-110' : 'border-transparent'
+                  ]">
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 6
+                  </div>
+                </button>
+                <button @click="selectedColor = 'white'" class="w-8 h-8 rounded transition-all border-2 relative group"
+                  :class="[
+                    'bg-white hover:bg-gray-100',
+                    selectedColor === 'white' ? 'border-blue-500 scale-110' : 'border-transparent'
+                  ]">
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 7
+                  </div>
+                </button>
                 <button @click="selectedColor = null"
-                  class="w-8 h-8 rounded transition-all border-2 bg-gray-800 hover:bg-gray-700 flex items-center justify-center"
+                  class="w-8 h-8 rounded transition-all border-2 bg-gray-800 hover:bg-gray-700 flex items-center justify-center relative group"
                   :class="[
                     selectedColor === null ? 'border-white scale-110' : 'border-transparent'
                   ]">
                   <span class="text-white text-xl">&times;</span>
+                  <div
+                    class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                    Press 8
+                  </div>
                 </button>
               </div>
             </div>
           </div>
         </div>
 
+        <div class="flex justify-center mb-4">
+          <MidiGrid :grid-data="currentStepGrid" @toggle-cell="toggleCell" @stop-painting="resetDrawMode"
+            :show-notes="showNotes" :note-length="noteLength" />
+        </div>
+
         <!-- Add shift controls -->
         <div class="flex items-center justify-center gap-2 mb-4">
-          <div class="grid grid-cols-3 gap-1">
-            <div></div>
-            <button @click="shiftNotes('up')"
-              class="p-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 relative group">
-              <span class="text-xl">↑</span>
-              <div
-                class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Shift + ↑
-              </div>
-            </button>
-            <div></div>
+          <div class="flex gap-1">
             <button @click="shiftNotes('left')"
               class="p-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 relative group">
               <span class="text-xl">←</span>
               <div
-                class="absolute top-1/2 right-full transform -translate-y-1/2 mr-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                 Shift + ←
               </div>
             </button>
-            <div class="p-2 text-gray-500 text-sm">Shift</div>
-            <button @click="shiftNotes('right')"
+            <button @click="shiftNotes('up')"
               class="p-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 relative group">
-              <span class="text-xl">→</span>
+              <span class="text-xl">↑</span>
               <div
-                class="absolute top-1/2 left-full transform -translate-y-1/2 ml-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                Shift + →
+                class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Shift + ↑
               </div>
             </button>
-            <div></div>
             <button @click="shiftNotes('down')"
               class="p-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 relative group">
               <span class="text-xl">↓</span>
@@ -92,13 +131,15 @@
                 Shift + ↓
               </div>
             </button>
-            <div></div>
+            <button @click="shiftNotes('right')"
+              class="p-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 relative group">
+              <span class="text-xl">→</span>
+              <div
+                class="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                Shift + →
+              </div>
+            </button>
           </div>
-        </div>
-
-        <div class="flex justify-center">
-          <MidiGrid :grid-data="currentStepGrid" @toggle-cell="toggleCell" @stop-painting="resetDrawMode"
-            :show-notes="showNotes" :note-length="noteLength" />
         </div>
 
         <!-- Add tempo controls -->
@@ -485,6 +526,34 @@ const handleKeyDown = (event) => {
     // Prevent default space behavior (scrolling)
     event.preventDefault();
     togglePlayback();
+  } else if (!event.shiftKey && !event.ctrlKey && !event.altKey && !event.metaKey) {
+    // Color shortcuts (only when no modifier keys are pressed)
+    switch (event.key) {
+      case '1':
+        selectedColor.value = 'blue';
+        break;
+      case '2':
+        selectedColor.value = 'red';
+        break;
+      case '3':
+        selectedColor.value = 'green';
+        break;
+      case '4':
+        selectedColor.value = 'cyan';
+        break;
+      case '5':
+        selectedColor.value = 'magenta';
+        break;
+      case '6':
+        selectedColor.value = 'yellow';
+        break;
+      case '7':
+        selectedColor.value = 'white';
+        break;
+      case '8':
+        selectedColor.value = null; // eraser
+        break;
+    }
   }
 };
 
