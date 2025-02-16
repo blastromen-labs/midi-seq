@@ -4,7 +4,8 @@
       @copy="copyCurrentStep" @paste="pasteToCurrentStep" @clear="clearClipboard" :copied-pattern="copiedPattern"
       :note-length="noteLength" @note-length-changed="handleNoteLengthChanged" @clear-all-notes="clearAllNotes"
       :pattern-length="patternLength" @pattern-length-changed="handlePatternLengthChanged" :velocity="velocity"
-      @velocity-changed="handleVelocityChanged" />
+      @velocity-changed="handleVelocityChanged" :step-length="stepLength"
+      @step-length-changed="handleStepLengthChanged" />
     <main class="flex-1 flex items-center justify-center p-8 pt-20">
       <div class="bg-zinc-900 rounded-lg p-6 shadow-xl w-[500px]">
         <div class="mb-4 flex justify-between items-center">
@@ -166,6 +167,7 @@ const midiOutput = ref(null);
 const noteLength = ref('16');
 const patternLength = ref(16);
 const velocity = ref(100);
+const stepLength = ref('16');
 
 // Create a sequence with dynamic length
 const sequence = ref(Array.from({ length: patternLength.value }, () => Array(60).fill(false)));
@@ -545,18 +547,28 @@ const shiftNotes = (direction) => {
 };
 
 const downloadMidi = () => {
-  // Create separate MIDI tracks for channel 0 and channel 1
   const track0 = new MidiWriter.Track();
   const track1 = new MidiWriter.Track();
 
-  // Set the tempo on both tracks
   track0.setTempo(tempo.value);
   track1.setTempo(tempo.value);
 
-  // Process each step in the sequence
+  // Calculate base ticks per step based on step length
+  const getTicksPerStep = () => {
+    switch (stepLength.value) {
+      case '64': return 8;    // 1/64 note = 8 ticks
+      case '32': return 16;   // 1/32 note = 16 ticks
+      case '8': return 64;    // 1/8 note = 64 ticks
+      case '16':
+      default:
+        return 32;          // 1/16 note = 32 ticks (default)
+    }
+  };
+
+  const ticksPerStep = getTicksPerStep();
+
   sequence.value.forEach((step, stepIndex) => {
-    // Calculate tick for the current step (each 16th note is 32 ticks apart)
-    const currentTick = stepIndex * 32;
+    const currentTick = stepIndex * ticksPerStep;
 
     // Create a single event for all notes in this step for each channel
     const channel0Notes = [];
@@ -566,7 +578,6 @@ const downloadMidi = () => {
     const channel0Lengths = [];
     const channel1Lengths = [];
 
-    // Collect notes for each channel in this step
     step.forEach((cell, index) => {
       if (cell) {
         const notes = getMidiNote(index, cell.color);
@@ -592,15 +603,14 @@ const downloadMidi = () => {
         channel0Lengths[i] === length && channel0Velocities[i] === parseInt(velocity)
       );
       if (notesWithCombo.length > 0) {
-
         const noteEvent0 = new MidiWriter.NoteEvent({
           pitch: notesWithCombo,
-          duration: `${length}`,
+          duration: length,
           velocity: parseInt(velocity),
           channel: 1,
-          tick: currentTick,
+          tick: currentTick
         });
-        // this is important fix because the library kept adding 32 ticks to events at step 0. Do not remove this.
+
         if (currentTick === 0) {
           noteEvent0.tick = 0;
         }
@@ -617,7 +627,6 @@ const downloadMidi = () => {
         channel1Lengths[i] === length && channel1Velocities[i] === parseInt(velocity)
       );
       if (notesWithCombo.length > 0) {
-
         const noteEvent1 = new MidiWriter.NoteEvent({
           pitch: notesWithCombo,
           duration: length,
@@ -635,11 +644,9 @@ const downloadMidi = () => {
     });
   });
 
-  // Create a new MIDI file with both tracks
   track0.mergeTrack(track1);
   const writer = new MidiWriter.Writer([track0]);
 
-  // Create a Blob from the MIDI data
   const blob = new Blob([writer.buildFile()], { type: 'audio/midi' });
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -684,6 +691,10 @@ const handlePatternLengthChanged = (newLength) => {
 
 const handleVelocityChanged = (newVelocity) => {
   velocity.value = newVelocity;
+};
+
+const handleStepLengthChanged = (length) => {
+  stepLength.value = length;
 };
 
 onMounted(() => {

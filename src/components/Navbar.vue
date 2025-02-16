@@ -57,6 +57,17 @@
                     </div>
                     <div class="h-6 w-px bg-gray-700"></div>
                     <div class="flex items-center gap-2">
+                        <label class="text-white text-sm">Step Length:</label>
+                        <select v-model="selectedStepLength" @change="stepLengthChanged"
+                            class="bg-gray-700 text-white rounded px-3 py-1.5 text-sm border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none">
+                            <option value="64">1/64</option>
+                            <option value="32">1/32</option>
+                            <option value="16">1/16</option>
+                            <option value="8">1/8</option>
+                        </select>
+                    </div>
+                    <div class="h-6 w-px bg-gray-700"></div>
+                    <div class="flex items-center gap-2">
                         <label class="text-white text-sm">Velocity:</label>
                         <select v-model="selectedVelocity" @change="velocityChanged"
                             class="bg-gray-700 text-white rounded px-3 py-1.5 text-sm border border-gray-600 hover:border-blue-500 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:outline-none">
@@ -117,6 +128,10 @@ const props = defineProps({
     velocity: {
         type: Number,
         default: 100
+    },
+    stepLength: {
+        type: String,
+        default: '16'
     }
 });
 
@@ -127,8 +142,9 @@ const showNotes = ref(false);
 const selectedNoteLength = ref(props.noteLength);
 const patternLength = ref(props.patternLength);
 const selectedVelocity = ref(props.velocity);
+const selectedStepLength = ref(props.stepLength);
 
-const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged', 'clearAllNotes', 'patternLengthChanged', 'velocityChanged']);
+const emit = defineEmits(['midiOutputSelected', 'showNotesChanged', 'copy', 'paste', 'clear', 'noteLengthChanged', 'clearAllNotes', 'patternLengthChanged', 'velocityChanged', 'stepLengthChanged']);
 
 const noteTypeChanged = () => {
     emit('noteLengthChanged', selectedNoteLength.value);
@@ -148,6 +164,10 @@ const patternLengthChanged = () => {
 
 const velocityChanged = () => {
     emit('velocityChanged', parseInt(selectedVelocity.value));
+};
+
+const stepLengthChanged = () => {
+    emit('stepLengthChanged', selectedStepLength.value);
 };
 
 const initializeMidi = async () => {
